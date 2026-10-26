@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# usage: floatall [float|tile|toggle]
+
+mode="${1:-toggle}"
+windows="$(niri msg --json windows)"
+
+# toggle: if any window is tiled, float everything. Otherwise tile everything.
+if [ "$mode" = "toggle" ]; then
+   if echo "$windows" | jq -e 'any(.[]; .is_floating | not)' >/dev/null; then
+      mode="float"
+   else
+      mode="tile"
+   fi
+fi
+
+case "$mode" in
+   float)
+      echo "$windows" | jq -r '.[] | select(.is_floating | not) | .id' |
+         while read -r id; do
+            niri msg action move-window-to-floating --id "$id"
+         done
+      ;;
+   tile)
+      echo "$windows" | jq -r '.[] | select(.is_floating) | .id' |
+         while read -r id; do
+            niri msg action move-window-to-tiling --id "$id"
+         done
+      ;;
+   *)
+      echo "usage: floatall [float|tile|toggle]" >&2
+      exit 1
+      ;;
+esac

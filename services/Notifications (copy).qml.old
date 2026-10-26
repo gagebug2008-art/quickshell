@@ -1,0 +1,227 @@
+
+import Quickshell
+import Quickshell.Wayland
+import Quickshell.Services.Notifications
+import QtQuick
+import QtQuick.Layouts
+import qs.wal as Wal
+import qs
+
+Item {
+    id: end
+
+height: notificationRepeater.index > 0
+        && notificationRepeater.itemAt(0)
+        ? notificationRepeater.itemAt(0).height
+        : barChasis.implicitHeight
+            anchors {
+        top: parent.topd
+        left: parent.left
+        right: parent.right
+    }
+    
+    NotificationServer {
+    id: server
+
+    actionsSupported: true
+    bodySupported: true
+    imageSupported: true
+
+    onNotification: n => {
+        n.tracked = true
+        barChasis.manualState = "Notifications"
+    }
+}
+
+
+    Rectangle {
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+        }
+
+        /* anchors.fill: parent */
+
+        Repeater {
+            id: notificationRepeater
+            model: server.trackedNotifications
+
+            delegate: Rectangle {
+                id: card
+
+                required property var modelData
+                required property int index
+
+                property real progress: 1.0
+
+                anchors {
+                    top: parent.top
+                    left: parent.left
+                    right: parent.right
+                }
+
+                radius: 50/8
+                color: "transparent"
+                width: 200
+
+                height: cont1.height + cont2.height + rws.spacing + notiContent.anchors.margins * 2
+
+                
+                /* anchors.right: parent.right */
+                /* Layout.fillWidth: true */
+
+                /* 
+                border.width: 1
+                border.color: "wheat"
+                */
+
+                NumberAnimation on progress {
+                    running: card.modelData.urgency !== NotificationUrgency.Critical
+                    from: 1.0
+                    to: 0.0
+                    duration: 5000
+                    easing.type: Easing.Linear
+
+                    onStopped: card.modelData.dismiss()
+                }
+
+                Timer {
+                    running: card.modelData.urgency !== NotificationUrgency.Critical || card.modelData.index < 1
+                    interval: 5000
+
+                    onTriggered: card.modelData.dismiss()
+                }
+
+                /* 
+                Rectangle {
+                    id: littlebar
+                    height: parent.heightd
+                    width: 3
+
+                    anchors {
+                        verticalCenter: parent.verticalCenter
+                        left: parent.left
+                        top: parent.top
+                        bottom: parent.bottom
+                        margins: 6
+                    }
+
+                    radius: height/2
+                    color: "white"
+                }
+
+                Rectangle {
+                    id: progress
+
+                    height: littlebar.height * card.progress
+                    width: 3.5
+
+                    anchors {
+                        left: littlebar.left
+                        leftMargin: -0.25
+                        top: littlebar.top
+                        topMargin: -0.25
+                    }
+
+                    color: "teal"
+                    radius: height/2
+                }
+                */
+
+                ColumnLayout {
+                    id: notiContent
+
+                    anchors {
+                        margins: 8
+                        left: parent.left
+                        top: parent.top
+                        right: parent.right
+                        
+                    }
+
+                    spacing: 1
+
+                    RowLayout {
+                        spacing: 10
+                        Layout.fillWidth: true
+
+                        Image {
+                            Layout.preferredHeight: 30
+                            Layout.preferredWidth: 30
+                            Layout.alignment: Qt.AlignCenter
+                            fillMode: Image.PreserveAspectFit
+
+                            visible: source.toString() !== ""
+                            source: card.modelData.image || card.modelData.appIcon || ""
+                        }
+
+                        ColumnLayout {
+                            id: rws
+
+                            Layout.fillWidth: true
+                            spacing: 2
+
+                            Text {
+                                id: cont1
+
+                                Layout.fillWidth: true
+                                text: card.modelData.summary
+                                color: Wal.Colors.color(14)
+                                font.pixelSize: 12
+                                font.hintingPreference: Font.PreferNoHinting
+                                font.bold: true
+                                antialiasing: true
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                id: cont2
+
+                                Layout.fillWidth: true
+                                text: card.modelData.body
+                                color: Wal.Colors.color(15)
+                                font.pixelSize: 11
+                                font.hintingPreference: Font.PreferNoHinting
+                                font.bold: false
+                                antialiasing: true
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+                    }
+
+                    /* 
+                    Item {
+                        id: progress
+                        height: 3
+                        width: card.width - 15
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: height/2
+                            color: "wheat"
+                        }
+
+                        Rectangle {
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            height: parent.height
+                            color: "grey"
+                            width: parent.width * card.progress
+                            radius: height/2
+                            z:200
+                        }
+                    }
+                    */
+                }
+
+                MouseArea {
+                    z: 4
+                    anchors.fill: card
+
+                    onClicked: card.modelData.dismiss()
+                }
+            }
+        }
+    }
+}
